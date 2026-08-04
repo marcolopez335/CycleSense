@@ -120,8 +120,7 @@ struct TodayView: View {
     }
 
     private var todayCard: some View {
-        let flow = store.flow(on: Date())
-        let symptoms = store.symptoms(on: Date())
+        let entry = store.dayLogEntry(on: Date())
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Today's log")
@@ -130,21 +129,44 @@ struct TodayView: View {
                 Button("Log") { showingLog = true }
                     .font(.subheadline.bold())
             }
-            if let flow {
+            if let flow = entry.flow {
                 Label("\(flow.displayName) flow", systemImage: "drop.fill")
                     .foregroundStyle(.red)
                     .font(.subheadline)
             }
-            if !symptoms.isEmpty {
+            if !entry.symptoms.isEmpty {
                 Label(
-                    symptoms.sorted { $0.displayName < $1.displayName }
+                    entry.symptoms.sorted { $0.displayName < $1.displayName }
                         .map(\.displayName)
                         .joined(separator: ", "),
                     systemImage: "heart.text.square"
                 )
                 .font(.subheadline)
             }
-            if flow == nil && symptoms.isEmpty {
+            if let mood = entry.mood {
+                Label(moodSummary(mood), systemImage: "face.smiling")
+                    .foregroundStyle(.indigo)
+                    .font(.subheadline)
+            }
+            if let sex = entry.sexualActivity {
+                Label("Sexual activity (\(sex.displayName.lowercased()))", systemImage: "heart.fill")
+                    .foregroundStyle(.purple)
+                    .font(.subheadline)
+            }
+            if let kg = entry.weightKg {
+                Label(formattedWeight(kg), systemImage: "scalemass")
+                    .font(.subheadline)
+            }
+            if let celsius = entry.bbtCelsius {
+                Label(formattedTemperature(celsius), systemImage: "thermometer.variable.and.figure")
+                    .font(.subheadline)
+            }
+            if let test = entry.ovulationTest {
+                Label("Ovulation test: \(test.displayName)", systemImage: "testtube.2")
+                    .foregroundStyle(.teal)
+                    .font(.subheadline)
+            }
+            if entryIsEmpty(entry) {
                 Text("Nothing logged yet.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -153,6 +175,33 @@ struct TodayView: View {
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func entryIsEmpty(_ entry: DayLogEntry) -> Bool {
+        entry.flow == nil && entry.symptoms.isEmpty && entry.mood == nil
+            && entry.weightKg == nil && entry.bbtCelsius == nil
+            && entry.sexualActivity == nil && entry.ovulationTest == nil
+    }
+
+    private func moodSummary(_ mood: MoodEntry) -> String {
+        let tone: String
+        switch mood.valence {
+        case ..<(-0.33): tone = "Unpleasant"
+        case 0.33...: tone = "Pleasant"
+        default: tone = "Neutral"
+        }
+        let labels = mood.labels.sorted { $0.displayName < $1.displayName }.map(\.displayName)
+        return labels.isEmpty ? "\(tone) mood" : "\(tone) mood — \(labels.joined(separator: ", "))"
+    }
+
+    private func formattedWeight(_ kg: Double) -> String {
+        Measurement(value: kg, unit: UnitMass.kilograms)
+            .formatted(.measurement(width: .abbreviated, usage: .personWeight))
+    }
+
+    private func formattedTemperature(_ celsius: Double) -> String {
+        "Basal temp " + Measurement(value: celsius, unit: UnitTemperature.celsius)
+            .formatted(.measurement(width: .abbreviated, usage: .person))
     }
 }
 
