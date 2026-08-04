@@ -57,8 +57,8 @@ The per-day log gains:
 | Cravings | `HKCategoryTypeIdentifier.appetiteChanges` | written as `.increased` |
 | Mood | `HKStateOfMind` | kind `.dailyMood`, valence, label set |
 
-Feeling labels offered (subset of `HKStateOfMind.Label`): calm, content, happy, stressed,
-irritated, anxious, sad, drained.
+Feeling labels offered (subset of `HKStateOfMind.Label`, all available on iOS 17): calm,
+content, happy, stressed, irritated, anxious, sad, discouraged.
 
 Authorization request expands to read/write all of the above. The existing rule is unchanged:
 editing or clearing a day deletes only samples this app created.
