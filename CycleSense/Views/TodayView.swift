@@ -154,7 +154,7 @@ struct TodayView: View {
                     .font(.subheadline)
             }
             if let kg = entry.weightKg {
-                Label(formattedWeight(kg), systemImage: "scalemass")
+                Label(weightLine(kg), systemImage: "scalemass")
                     .font(.subheadline)
             }
             if let celsius = entry.bbtCelsius {
@@ -194,9 +194,35 @@ struct TodayView: View {
         return labels.isEmpty ? "\(tone) mood" : "\(tone) mood — \(labels.joined(separator: ", "))"
     }
 
+    private var usesImperialUnits: Bool {
+        Locale.current.measurementSystem == .us
+    }
+
+    private func weightNumber(_ kg: Double) -> Double {
+        usesImperialUnits ? kg / 0.45359237 : kg
+    }
+
     private func formattedWeight(_ kg: Double) -> String {
-        Measurement(value: kg, unit: UnitMass.kilograms)
-            .formatted(.measurement(width: .abbreviated, usage: .personWeight))
+        String(format: "%.1f %@", weightNumber(kg), usesImperialUnits ? "lb" : "kg")
+    }
+
+    /// "142.5 lb · 0.4 lb less than Fri" — neutral wording, no judgment.
+    private func weightLine(_ kg: Double) -> String {
+        let base = formattedWeight(kg)
+        guard let previous = WeightMetrics.last(
+            before: Calendar.current.startOfDay(for: Date()),
+            in: store.weightByDay
+        ) else { return base }
+        let delta = weightNumber(kg) - weightNumber(previous.kg)
+        let daysAgo = Calendar.current.dateComponents([.day], from: previous.date, to: Calendar.current.startOfDay(for: Date())).day ?? 0
+        let when = daysAgo <= 6
+            ? previous.date.formatted(.dateTime.weekday(.abbreviated))
+            : previous.date.formatted(.dateTime.month(.abbreviated).day())
+        if abs(delta) < 0.05 {
+            return "\(base) · same as \(when)"
+        }
+        let deltaText = String(format: "%.1f %@", abs(delta), usesImperialUnits ? "lb" : "kg")
+        return "\(base) · \(deltaText) \(delta < 0 ? "less" : "more") than \(when)"
     }
 
     private func formattedTemperature(_ celsius: Double) -> String {

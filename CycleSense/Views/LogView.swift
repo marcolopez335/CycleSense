@@ -51,6 +51,30 @@ struct LogView: View {
         return String(format: "%.2f", value)
     }
 
+    /// Most recent weight logged before this sheet's day, for seeding entry.
+    private var lastWeightKg: Double? {
+        WeightMetrics.last(before: Calendar.current.startOfDay(for: date), in: store.weightByDay)?.kg
+    }
+
+    private var weightPlaceholder: String {
+        lastWeightKg.map(inputFromKg) ?? "—"
+    }
+
+    private func weightStepButton(systemImage: String, delta: Double) -> some View {
+        Button {
+            let current = Double(weightText.replacingOccurrences(of: ",", with: "."))
+                ?? lastWeightKg.map { usesImperialUnits ? $0 / Self.kgPerPound : $0 }
+            guard let current else { return }
+            weightText = String(format: "%.1f", max(0, current + delta))
+        } label: {
+            Image(systemName: systemImage)
+                .font(.title)
+                .foregroundStyle(.pink.opacity(0.85))
+        }
+        .buttonStyle(.plain)
+        .disabled(weightText.isEmpty && lastWeightKg == nil)
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -112,14 +136,30 @@ struct LogView: View {
                 }
 
                 Section {
-                    DisclosureGroup("Body measurements", isExpanded: $bodyExpanded) {
-                        LabeledContent("Weight") {
-                            TextField("—", text: $weightText)
+                    HStack(spacing: 14) {
+                        weightStepButton(systemImage: "minus.circle.fill", delta: -0.1)
+                        VStack(spacing: 2) {
+                            TextField(weightPlaceholder, text: $weightText)
                                 .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 90)
-                            Text(weightUnitLabel).foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .font(.system(.title2, design: .rounded, weight: .semibold))
+                            Text(weightUnitLabel)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
+                        weightStepButton(systemImage: "plus.circle.fill", delta: 0.1)
+                    }
+                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                } header: {
+                    Text("Weight")
+                } footer: {
+                    if lastWeightKg != nil && weightText.isEmpty {
+                        Text("Starts from your last logged weight.")
+                    }
+                }
+
+                Section {
+                    DisclosureGroup("Basal temperature", isExpanded: $bodyExpanded) {
                         LabeledContent("Basal temp") {
                             TextField("—", text: $bbtText)
                                 .keyboardType(.decimalPad)
@@ -263,7 +303,7 @@ struct LogView: View {
         }
         if let kg = entry.weightKg { weightText = inputFromKg(kg) }
         if let celsius = entry.bbtCelsius { bbtText = inputFromCelsius(celsius) }
-        if entry.weightKg != nil || entry.bbtCelsius != nil { bodyExpanded = true }
+        if entry.bbtCelsius != nil { bodyExpanded = true }
         sexualActivity = entry.sexualActivity == .unspecified ? nil : entry.sexualActivity
         ovulationTest = entry.ovulationTest
         if entry.ovulationTest != nil { ovulationExpanded = true }

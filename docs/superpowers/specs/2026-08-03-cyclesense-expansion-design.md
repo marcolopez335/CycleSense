@@ -113,3 +113,20 @@ WidgetKit extension, small and medium families.
 - Snapshot encode/decode gets a unit test.
 - Notification trigger-date computation is extracted as a pure function and unit tested.
 - UI verified by running in the iOS Simulator (established workflow).
+
+## Addendum (2026-08-03, approved): weight UX revamp
+
+Marco's feedback after testing: weight logging must feel easy and companion-like on both
+the data-entry and metrics side.
+
+- Log sheet: weight gets its own section (no longer inside the collapsed disclosure, which
+  now holds only basal temperature). The field seeds from the last logged weight and has
+  large +/− steppers (0.1 in the display unit); typing still works. Footer: "Starts from
+  your last logged weight."
+- Today card: weight line shows a neutral delta vs. the previous entry — "142.5 lb ·
+  0.5 lb less than Sun". Never colored red/green.
+- Insights: new Weight section at the top — 90-day chart (points + 7-day trailing-average
+  curve), logged period days shaded soft pink for cycle context, friendly empty state under
+  2 entries. Footer: "Weight naturally shifts across your cycle — trends matter more than
+  single days."
+- New pure helper `WeightMetrics` (history/last-before/moving-average), unit tested.
