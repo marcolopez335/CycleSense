@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import WidgetKit
 
 /// Observable source of truth for the UI. Mirrors HealthKit data into
 /// day-keyed dictionaries and derives cycles and predictions from them.
@@ -125,6 +126,20 @@ final class CycleStore: ObservableObject {
         prediction = CyclePredictor.prediction(from: cycles, today: Date(), calendar: calendar)
         let currentPrediction = prediction
         Task { await NotificationScheduler.reschedule(prediction: currentPrediction) }
+        publishWidgetSnapshot()
+    }
+
+    private func publishWidgetSnapshot() {
+        let snapshot = WidgetSnapshot(
+            cycleDay: currentCycleDay,
+            phase: currentPhase?.rawValue,
+            nextPeriodStart: prediction?.nextPeriodStart,
+            fertileStart: prediction?.fertileWindow?.start,
+            fertileEnd: prediction?.fertileWindow?.end,
+            generatedAt: Date()
+        )
+        snapshot.write(to: WidgetSnapshot.appGroupDefaults)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     // MARK: - Derived state
