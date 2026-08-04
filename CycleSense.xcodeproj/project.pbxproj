@@ -30,6 +30,15 @@
 			path = CycleSenseTests;
 			sourceTree = "<group>";
 		};
+		AB000000000000000000001A /* CycleSenseShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = CycleSenseShared;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				AB0000000000000000000001 /* CycleSense */,
+				AB000000000000000000001A /* CycleSenseShared */,
 				AB0000000000000000000010 /* CycleSenseTests */,
 				AB0000000000000000000003 /* Products */,
 			);
@@ -85,6 +95,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				AB0000000000000000000001 /* CycleSense */,
+				AB000000000000000000001A /* CycleSenseShared */,
 			);
 			name = CycleSense;
 			packageProductDependencies = (
