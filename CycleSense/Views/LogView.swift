@@ -9,8 +9,47 @@ struct LogView: View {
 
     @State private var flow: FlowLevel?
     @State private var symptoms: Set<Symptom> = []
+    @State private var moodLogged = false
+    @State private var moodValence: Double = 0
+    @State private var moodLabels: Set<MoodLabel> = []
+    @State private var weightText = ""
+    @State private var bbtText = ""
+    @State private var sexualActivity: SexualActivityEntry?
+    @State private var ovulationTest: OvulationTestResult?
+    @State private var bodyExpanded = false
+    @State private var ovulationExpanded = false
     @State private var isSaving = false
     @State private var hasLoaded = false
+
+    private var usesImperialUnits: Bool {
+        Locale.current.measurementSystem == .us
+    }
+    private var weightUnitLabel: String { usesImperialUnits ? "lb" : "kg" }
+    private var bbtUnitLabel: String { usesImperialUnits ? "°F" : "°C" }
+
+    private static let kgPerPound = 0.45359237
+
+    private func kgFromInput(_ text: String) -> Double? {
+        guard let value = Double(text.replacingOccurrences(of: ",", with: ".")), value > 0 else { return nil }
+        return usesImperialUnits ? value * Self.kgPerPound : value
+    }
+
+    private func inputFromKg(_ kg: Double) -> String {
+        let value = usesImperialUnits ? kg / Self.kgPerPound : kg
+        return String(format: "%.1f", value)
+    }
+
+    private func celsiusFromInput(_ text: String) -> Double? {
+        guard let value = Double(text.replacingOccurrences(of: ",", with: ".")) else { return nil }
+        let celsius = usesImperialUnits ? (value - 32) * 5 / 9 : value
+        // Plausible BBT range only; garbage input is dropped rather than saved.
+        return (30...45).contains(celsius) ? celsius : nil
+    }
+
+    private func inputFromCelsius(_ celsius: Double) -> String {
+        let value = usesImperialUnits ? celsius * 9 / 5 + 32 : celsius
+        return String(format: "%.2f", value)
+    }
 
     var body: some View {
         NavigationStack {
@@ -35,6 +74,80 @@ struct LogView: View {
                         }
                     }
                     .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                }
+
+                Section("Mood") {
+                    if moodLogged {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Unpleasant").font(.caption).foregroundStyle(.secondary)
+                                Slider(value: $moodValence, in: -1...1, step: 0.1)
+                                Text("Pleasant").font(.caption).foregroundStyle(.secondary)
+                            }
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 8)], spacing: 8) {
+                                ForEach(MoodLabel.allCases) { label in
+                                    moodChip(label)
+                                }
+                            }
+                            Button("Clear mood", role: .destructive) {
+                                moodLogged = false
+                                moodValence = 0
+                                moodLabels = []
+                            }
+                            .font(.footnote)
+                        }
+                        .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                    } else {
+                        Button("Log mood") { moodLogged = true }
+                    }
+                }
+
+                Section("Sexual activity") {
+                    HStack(spacing: 8) {
+                        sexChip(nil, title: "None")
+                        sexChip(.protected, title: "Protected")
+                        sexChip(.unprotected, title: "Unprotected")
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                }
+
+                Section {
+                    DisclosureGroup("Body measurements", isExpanded: $bodyExpanded) {
+                        LabeledContent("Weight") {
+                            TextField("—", text: $weightText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 90)
+                            Text(weightUnitLabel).foregroundStyle(.secondary)
+                        }
+                        LabeledContent("Basal temp") {
+                            TextField("—", text: $bbtText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 90)
+                            Text(bbtUnitLabel).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Section {
+                    DisclosureGroup("Ovulation test", isExpanded: $ovulationExpanded) {
+                        ForEach(OvulationTestResult.allCases) { result in
+                            Button {
+                                ovulationTest = ovulationTest == result ? nil : result
+                            } label: {
+                                HStack {
+                                    Text(result.displayName)
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    if ovulationTest == result {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(.pink)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .navigationTitle(date.formatted(date: .abbreviated, time: .omitted))
@@ -105,17 +218,71 @@ struct LogView: View {
         .buttonStyle(.plain)
     }
 
+    private func moodChip(_ label: MoodLabel) -> some View {
+        let isSelected = moodLabels.contains(label)
+        return Button {
+            if isSelected { moodLabels.remove(label) } else { moodLabels.insert(label) }
+        } label: {
+            Text(label.displayName)
+                .font(.footnote)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(isSelected ? Color.indigo.opacity(0.85) : Color(.systemGray5), in: Capsule())
+                .foregroundStyle(isSelected ? .white : .primary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func sexChip(_ value: SexualActivityEntry?, title: String) -> some View {
+        let isSelected = sexualActivity == value
+        return Button {
+            sexualActivity = value
+        } label: {
+            Text(title)
+                .font(.footnote)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(isSelected ? Color.purple.opacity(0.85) : Color(.systemGray5), in: RoundedRectangle(cornerRadius: 10))
+                .foregroundStyle(isSelected ? .white : .primary)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func loadExisting() {
         guard !hasLoaded else { return }
-        flow = store.flow(on: date)
-        symptoms = store.symptoms(on: date)
+        let entry = store.dayLogEntry(on: date)
+        flow = entry.flow
+        symptoms = entry.symptoms
+        if let mood = entry.mood {
+            moodLogged = true
+            moodValence = mood.valence
+            moodLabels = mood.labels
+        }
+        if let kg = entry.weightKg { weightText = inputFromKg(kg) }
+        if let celsius = entry.bbtCelsius { bbtText = inputFromCelsius(celsius) }
+        if entry.weightKg != nil || entry.bbtCelsius != nil { bodyExpanded = true }
+        sexualActivity = entry.sexualActivity == .unspecified ? nil : entry.sexualActivity
+        ovulationTest = entry.ovulationTest
+        if entry.ovulationTest != nil { ovulationExpanded = true }
         hasLoaded = true
     }
 
     private func save() {
         isSaving = true
+        let entry = DayLogEntry(
+            flow: flow,
+            symptoms: symptoms,
+            mood: moodLogged ? MoodEntry(valence: moodValence, labels: moodLabels) : nil,
+            weightKg: kgFromInput(weightText),
+            bbtCelsius: celsiusFromInput(bbtText),
+            sexualActivity: sexualActivity,
+            ovulationTest: ovulationTest
+        )
         Task {
-            await store.logDay(date, flow: flow, symptoms: symptoms)
+            await store.logDay(date, entry: entry)
             isSaving = false
             dismiss()
         }

@@ -9,6 +9,12 @@ final class CycleStore: ObservableObject {
     @Published private(set) var flowByDay: [Date: FlowLevel] = [:]
     /// Logged symptoms keyed by start-of-day.
     @Published private(set) var symptomsByDay: [Date: Set<Symptom>] = [:]
+    /// Expanded log data keyed by start-of-day.
+    @Published private(set) var moodByDay: [Date: MoodEntry] = [:]
+    @Published private(set) var weightByDay: [Date: Double] = [:]
+    @Published private(set) var bbtByDay: [Date: Double] = [:]
+    @Published private(set) var sexByDay: [Date: SexualActivityEntry] = [:]
+    @Published private(set) var ovulationTestByDay: [Date: OvulationTestResult] = [:]
     /// Cycles derived from `flowByDay`, oldest first.
     @Published private(set) var cycles: [Cycle] = []
     @Published private(set) var prediction: Prediction?
@@ -48,8 +54,18 @@ final class CycleStore: ObservableObject {
         do {
             async let flow = manager.fetchFlowByDay(monthsBack: 24)
             async let symptoms = manager.fetchSymptomsByDay(monthsBack: 24)
+            async let mood = manager.fetchMoodByDay(monthsBack: 24)
+            async let weight = manager.fetchWeightByDay(monthsBack: 24)
+            async let bbt = manager.fetchBBTByDay(monthsBack: 24)
+            async let sex = manager.fetchSexualActivityByDay(monthsBack: 24)
+            async let ovulation = manager.fetchOvulationTestsByDay(monthsBack: 24)
             flowByDay = try await flow
             symptomsByDay = try await symptoms
+            moodByDay = try await mood
+            weightByDay = try await weight
+            bbtByDay = try await bbt
+            sexByDay = try await sex
+            ovulationTestByDay = try await ovulation
             recompute()
         } catch {
             lastError = error.localizedDescription
@@ -58,12 +74,12 @@ final class CycleStore: ObservableObject {
 
     // MARK: - Logging
 
-    /// Saves a day's flow and symptoms to HealthKit and updates local state.
-    /// Passing `flow: nil` clears this app's flow entry for that day.
-    func logDay(_ day: Date, flow: FlowLevel?, symptoms: Set<Symptom>) async {
+    /// Saves one day's full log entry to HealthKit and updates local state.
+    /// Nil fields clear this app's samples of that type for the day.
+    func logDay(_ day: Date, entry: DayLogEntry) async {
         let dayStart = calendar.startOfDay(for: day)
         do {
-            if let flow {
+            if let flow = entry.flow {
                 // First day of a period if the previous day has no flow logged.
                 // Backfilling an earlier day can leave the next day's metadata
                 // stale; the grouping in CyclePredictor does not rely on it.
@@ -77,15 +93,30 @@ final class CycleStore: ObservableObject {
                 // next refresh — HealthKit only lets us delete our own samples.
                 flowByDay.removeValue(forKey: dayStart)
             }
-            await manager.saveSymptoms(symptoms, on: dayStart)
-            if symptoms.isEmpty {
-                symptomsByDay.removeValue(forKey: dayStart)
-            } else {
-                symptomsByDay[dayStart] = symptoms
-            }
-            recompute()
+            try await manager.saveMood(entry.mood, on: dayStart)
+            try await manager.saveWeight(entry.weightKg, on: dayStart)
+            try await manager.saveBBT(entry.bbtCelsius, on: dayStart)
+            try await manager.saveSexualActivity(entry.sexualActivity, on: dayStart)
+            try await manager.saveOvulationTest(entry.ovulationTest, on: dayStart)
         } catch {
             lastError = error.localizedDescription
+        }
+        await manager.saveSymptoms(entry.symptoms, on: dayStart)
+
+        setOrRemove(entry.symptoms.isEmpty ? nil : entry.symptoms, in: &symptomsByDay, at: dayStart)
+        setOrRemove(entry.mood, in: &moodByDay, at: dayStart)
+        setOrRemove(entry.weightKg, in: &weightByDay, at: dayStart)
+        setOrRemove(entry.bbtCelsius, in: &bbtByDay, at: dayStart)
+        setOrRemove(entry.sexualActivity, in: &sexByDay, at: dayStart)
+        setOrRemove(entry.ovulationTest, in: &ovulationTestByDay, at: dayStart)
+        recompute()
+    }
+
+    private func setOrRemove<V>(_ value: V?, in dict: inout [Date: V], at key: Date) {
+        if let value {
+            dict[key] = value
+        } else {
+            dict.removeValue(forKey: key)
         }
     }
 
@@ -145,5 +176,18 @@ final class CycleStore: ObservableObject {
 
     func flow(on date: Date) -> FlowLevel? {
         flowByDay[calendar.startOfDay(for: date)]
+    }
+
+    func dayLogEntry(on date: Date) -> DayLogEntry {
+        let day = calendar.startOfDay(for: date)
+        return DayLogEntry(
+            flow: flowByDay[day],
+            symptoms: symptomsByDay[day] ?? [],
+            mood: moodByDay[day],
+            weightKg: weightByDay[day],
+            bbtCelsius: bbtByDay[day],
+            sexualActivity: sexByDay[day],
+            ovulationTest: ovulationTestByDay[day]
+        )
     }
 }
