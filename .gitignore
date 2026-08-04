@@ -13,3 +13,4 @@ build/
 # Swift Package Manager
 .swiftpm/
 .build/
+.superpowers/
