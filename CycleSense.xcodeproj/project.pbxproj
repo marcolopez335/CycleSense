@@ -6,10 +6,39 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AB0000000000000000000022 /* CycleSenseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AB000000000000000000001D /* CycleSenseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AB0000000000000000000023 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AB0000000000000000000022 /* CycleSenseWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		AB0000000000000000000004 /* CycleSense.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CycleSense.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0000000000000000000011 /* CycleSenseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CycleSenseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB000000000000000000001D /* CycleSenseWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CycleSenseWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		AB000000000000000000002A /* Exceptions for "CycleSenseWidget" folder in "CycleSenseWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = AB000000000000000000001C /* CycleSenseWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AB0000000000000000000001 /* CycleSense */ = {
@@ -39,6 +68,18 @@
 			path = CycleSenseShared;
 			sourceTree = "<group>";
 		};
+		AB000000000000000000001B /* CycleSenseWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AB000000000000000000002A /* Exceptions for "CycleSenseWidget" folder in "CycleSenseWidgetExtension" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = CycleSenseWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +97,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AB0000000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -64,6 +112,7 @@
 			children = (
 				AB0000000000000000000001 /* CycleSense */,
 				AB000000000000000000001A /* CycleSenseShared */,
+				AB000000000000000000001B /* CycleSenseWidget */,
 				AB0000000000000000000010 /* CycleSenseTests */,
 				AB0000000000000000000003 /* Products */,
 			);
@@ -74,6 +123,7 @@
 			children = (
 				AB0000000000000000000004 /* CycleSense.app */,
 				AB0000000000000000000011 /* CycleSenseTests.xctest */,
+				AB000000000000000000001D /* CycleSenseWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -88,10 +138,12 @@
 				AB0000000000000000000008 /* Sources */,
 				AB0000000000000000000005 /* Frameworks */,
 				AB0000000000000000000009 /* Resources */,
+				AB0000000000000000000023 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AB0000000000000000000024 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AB0000000000000000000001 /* CycleSense */,
@@ -126,6 +178,29 @@
 			productReference = AB0000000000000000000011 /* CycleSenseTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		AB000000000000000000001C /* CycleSenseWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB000000000000000000001E /* Build configuration list for PBXNativeTarget "CycleSenseWidgetExtension" */;
+			buildPhases = (
+				AB000000000000000000001F /* Sources */,
+				AB0000000000000000000020 /* Frameworks */,
+				AB0000000000000000000021 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AB000000000000000000001B /* CycleSenseWidget */,
+				AB000000000000000000001A /* CycleSenseShared */,
+			);
+			name = CycleSenseWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = CycleSenseWidgetExtension;
+			productReference = AB000000000000000000001D /* CycleSenseWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -142,6 +217,9 @@
 					AB0000000000000000000012 = {
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = AB0000000000000000000006;
+					};
+					AB000000000000000000001C = {
+						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
@@ -161,12 +239,20 @@
 			targets = (
 				AB0000000000000000000006 /* CycleSense */,
 				AB0000000000000000000012 /* CycleSenseTests */,
+				AB000000000000000000001C /* CycleSenseWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		AB0000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB0000000000000000000021 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -190,6 +276,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AB000000000000000000001F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -197,6 +290,11 @@
 			isa = PBXTargetDependency;
 			target = AB0000000000000000000006 /* CycleSense */;
 			targetProxy = AB0000000000000000000017 /* PBXContainerItemProxy */;
+		};
+		AB0000000000000000000024 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AB000000000000000000001C /* CycleSenseWidgetExtension */;
+			targetProxy = AB0000000000000000000025 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -207,6 +305,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = AB0000000000000000000006;
 			remoteInfo = CycleSense;
+		};
+		AB0000000000000000000025 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AB000000000000000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AB000000000000000000001C;
+			remoteInfo = CycleSenseWidgetExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -366,6 +471,60 @@
 			};
 			name = Release;
 		};
+		AB0000000000000000000026 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = CycleSenseWidget/CycleSenseWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CycleSenseWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CycleSense;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.CycleSense.CycleSenseWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AB0000000000000000000027 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = CycleSenseWidget/CycleSenseWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CycleSenseWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CycleSense;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.CycleSense.CycleSenseWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		AB000000000000000000000E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -447,6 +606,15 @@
 			buildConfigurations = (
 				AB0000000000000000000018 /* Debug */,
 				AB0000000000000000000019 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AB000000000000000000001E /* Build configuration list for PBXNativeTarget "CycleSenseWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB0000000000000000000026 /* Debug */,
+				AB0000000000000000000027 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

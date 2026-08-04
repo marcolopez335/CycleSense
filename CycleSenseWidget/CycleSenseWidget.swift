@@ -1,0 +1,118 @@
+import SwiftUI
+import WidgetKit
+
+struct CycleEntry: TimelineEntry {
+    let date: Date
+    let snapshot: WidgetSnapshot?
+}
+
+struct CycleProvider: TimelineProvider {
+    func placeholder(in context: Context) -> CycleEntry {
+        CycleEntry(date: .now, snapshot: WidgetSnapshot(
+            cycleDay: 12, phase: "Follicular",
+            nextPeriodStart: Calendar.current.date(byAdding: .day, value: 16, to: .now),
+            fertileStart: nil, fertileEnd: nil, generatedAt: .now
+        ))
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (CycleEntry) -> Void) {
+        completion(CycleEntry(date: .now, snapshot: WidgetSnapshot.read(from: WidgetSnapshot.appGroupDefaults)))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<CycleEntry>) -> Void) {
+        let entry = CycleEntry(date: .now, snapshot: WidgetSnapshot.read(from: WidgetSnapshot.appGroupDefaults))
+        // The app pushes reloads on data changes; refresh at next midnight so
+        // the cycle-day number stays correct even without app launches.
+        let nextMidnight = Calendar.current.nextDate(
+            after: .now, matching: DateComponents(hour: 0), matchingPolicy: .nextTime
+        ) ?? .now.addingTimeInterval(86_400)
+        completion(Timeline(entries: [entry], policy: .after(nextMidnight)))
+    }
+}
+
+struct CycleWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: CycleEntry
+
+    private var daysUntilNextPeriod: Int? {
+        guard let next = entry.snapshot?.nextPeriodStart else { return nil }
+        return Calendar.current.dateComponents(
+            [.day],
+            from: Calendar.current.startOfDay(for: entry.date),
+            to: Calendar.current.startOfDay(for: next)
+        ).day
+    }
+
+    var body: some View {
+        Group {
+            if let snapshot = entry.snapshot, let cycleDay = snapshot.cycleDay {
+                content(snapshot: snapshot, cycleDay: cycleDay)
+            } else {
+                VStack(spacing: 4) {
+                    Image(systemName: "heart.circle.fill")
+                        .foregroundStyle(.pink)
+                        .font(.title2)
+                    Text("Open CycleSense to start tracking")
+                        .font(.caption2)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .containerBackground(for: .widget) { Color(.systemBackground) }
+    }
+
+    private func content(snapshot: WidgetSnapshot, cycleDay: Int) -> some View {
+        HStack(spacing: 12) {
+            VStack(spacing: 2) {
+                Text("Day \(cycleDay)")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                if let days = daysUntilNextPeriod {
+                    Text(periodText(days))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            if family == .systemMedium {
+                VStack(alignment: .leading, spacing: 6) {
+                    if let phase = snapshot.phase {
+                        Label("\(phase) phase", systemImage: "circle.hexagongrid.fill")
+                            .font(.caption)
+                            .foregroundStyle(.pink)
+                    }
+                    if let start = snapshot.fertileStart, let end = snapshot.fertileEnd {
+                        Label(
+                            "Fertile \(start.formatted(.dateTime.month(.abbreviated).day())) – \(end.formatted(.dateTime.month(.abbreviated).day()))",
+                            systemImage: "sparkles"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.teal)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func periodText(_ days: Int) -> String {
+        if days > 1 { return "Period in \(days) days" }
+        if days == 1 { return "Period tomorrow" }
+        if days == 0 { return "Period expected today" }
+        return -days == 1 ? "1 day late" : "\(-days) days late"
+    }
+}
+
+struct CycleSenseWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "CycleSenseWidget", provider: CycleProvider()) { entry in
+            CycleWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Cycle day")
+        .description("Your current cycle day and next period estimate.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
