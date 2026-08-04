@@ -3,6 +3,9 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var store: CycleStore
     @Environment(\.openURL) private var openURL
+    @AppStorage(NotificationScheduler.periodEnabledKey) private var periodReminders = false
+    @AppStorage(NotificationScheduler.fertileEnabledKey) private var fertileReminders = false
+    @State private var notificationsDenied = false
 
     var body: some View {
         NavigationStack {
@@ -25,6 +28,22 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Period reminders", isOn: $periodReminders)
+                    Toggle("Fertile window reminder", isOn: $fertileReminders)
+                    if notificationsDenied && (periodReminders || fertileReminders) {
+                        Button("Enable notifications in Settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                openURL(url)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Reminders")
+                } footer: {
+                    Text("Period reminders arrive 2 days before and on the estimated start day, at 9:00. The fertile reminder arrives when the estimated window opens.")
+                }
+
+                Section {
                     Button("Refresh data from Health") {
                         Task { await store.refresh() }
                     }
@@ -42,6 +61,19 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .task { notificationsDenied = await NotificationScheduler.permissionDenied() }
+            .onChange(of: periodReminders) { _, _ in remindersChanged() }
+            .onChange(of: fertileReminders) { _, _ in remindersChanged() }
+        }
+    }
+
+    private func remindersChanged() {
+        Task {
+            if periodReminders || fertileReminders {
+                _ = await NotificationScheduler.requestPermission()
+                notificationsDenied = await NotificationScheduler.permissionDenied()
+            }
+            await NotificationScheduler.reschedule(prediction: store.prediction)
         }
     }
 }

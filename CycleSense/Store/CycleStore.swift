@@ -123,6 +123,8 @@ final class CycleStore: ObservableObject {
     private func recompute() {
         cycles = CyclePredictor.cycles(fromFlowDays: Array(flowByDay.keys), calendar: calendar)
         prediction = CyclePredictor.prediction(from: cycles, today: Date(), calendar: calendar)
+        let currentPrediction = prediction
+        Task { await NotificationScheduler.reschedule(prediction: currentPrediction) }
     }
 
     // MARK: - Derived state
