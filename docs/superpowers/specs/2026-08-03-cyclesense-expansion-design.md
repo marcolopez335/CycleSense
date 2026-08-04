@@ -15,7 +15,7 @@ Four sub-projects, built and shippable in this order:
 Decisions made during brainstorming:
 
 - "Meals" logging means **cravings/appetite tracking** (HealthKit `appetiteChanges`), not meal timestamps or a food diary.
-- Mood uses **Apple State of Mind** (`HKStateOfMind`, iOS 17+): daily-mood valence plus feeling labels, not a custom scale.
+- Mood uses **Apple State of Mind** (`HKStateOfMind`, iOS 18+): daily-mood valence plus feeling labels, not a custom scale. The app's deployment target was raised from iOS 17.0 to 18.0 for this (decision confirmed with Marco during implementation).
 - Log sheet stays a **single grouped scroll** with section headers; rarely-used sections (Body, Ovulation test) are collapsed by default.
 
 ## Sub-project 1: CyclePredictor unit tests
