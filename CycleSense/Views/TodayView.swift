@@ -108,20 +108,35 @@ struct TodayView: View {
     }
 
     private func phaseCard(_ phase: CyclePhase) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: phase.systemImage)
-                .font(.title2)
-                .foregroundStyle(Theme.primary)
-                .frame(width: 36)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(phase.rawValue.lowercased()) phase")
-                    .font(.headline)
-                    .foregroundStyle(Theme.ink)
-                Text(phase.blurb)
-                    .font(.footnote)
-                    .foregroundStyle(Theme.body)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                Image(systemName: phase.systemImage)
+                    .font(.title2)
+                    .foregroundStyle(Theme.primary)
+                    .frame(width: 36)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(phase.rawValue.lowercased()) phase")
+                        .font(.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text(phase.blurb)
+                        .font(.footnote)
+                        .foregroundStyle(Theme.body)
+                }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            if let day = store.currentCycleDay {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "lightbulb.fill")
+                        .imageScale(.small)
+                        .foregroundStyle(Color(hex: 0xD9A85A))
+                    Text(CompanionTips.tip(for: phase, cycleDay: day))
+                        .font(.footnote)
+                        .foregroundStyle(Theme.body)
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Theme.sand.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
+            }
         }
         .padding(16)
         .cozyCard()

@@ -24,8 +24,19 @@ struct InsightsView: View {
         }
     }
 
+    private var patternInsights: [PatternInsight] {
+        PatternInsights.insights(
+            cycles: store.cycles,
+            flowByDay: store.flowByDay,
+            symptomsByDay: store.symptomsByDay,
+            moodByDay: store.moodByDay
+        )
+    }
+
     private var insightsList: some View {
         List {
+            patternsSection
+
             if !weightHistory.isEmpty {
                 weightSection
             }
@@ -106,6 +117,44 @@ struct InsightsView: View {
             .font(Theme.title(17))
             .foregroundStyle(Theme.ink)
             .textCase(nil)
+    }
+
+    private var patternsSection: some View {
+        Section {
+            let insights = patternInsights
+            if insights.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("still learning you")
+                        .font(.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text("log symptoms and moods across a couple of cycles and your patterns show up here.")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.body)
+                }
+                .padding(.vertical, 4)
+            } else {
+                ForEach(insights, id: \.text) { insight in
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Image(systemName: insight.symbol)
+                            .imageScale(.small)
+                            .foregroundStyle(Theme.primary)
+                            .frame(width: 20)
+                        Text(insight.text)
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.body)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        } header: {
+            sectionHeader("your patterns")
+        } footer: {
+            if !patternInsights.isEmpty {
+                Text("patterns come from your own logs across completed cycles — not medical advice.")
+                    .foregroundStyle(Theme.soft)
+            }
+        }
+        .listRowBackground(Theme.card)
     }
 
     private func lengthText(_ value: Int?) -> String {
