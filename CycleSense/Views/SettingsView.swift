@@ -11,60 +11,77 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    LabeledContent("Health data", value: store.healthAvailable ? "Available" : "Unavailable")
-                    Button("Re-request Health permissions") {
+                    LabeledContent("health data", value: store.healthAvailable ? "available" : "unavailable")
+                    Button("re-request health permissions") {
                         Task { await store.requestAccessAndRefresh() }
                     }
                     .disabled(!store.healthAvailable)
-                    Button("Open Health app") {
+                    Button("open the health app") {
                         if let url = URL(string: "x-apple-health://") {
                             openURL(url)
                         }
                     }
                 } header: {
-                    Text("Apple Health")
+                    sectionHeader("apple health")
                 } footer: {
-                    Text("iOS only shows the permission sheet once. To change access later, open the Health app and go to Sharing → Apps → CycleSense.")
+                    Text("iOS only shows the permission sheet once. to change access later, open the Health app → Sharing → Apps → CycleSense.")
+                        .foregroundStyle(Theme.soft)
                 }
+                .listRowBackground(Theme.card)
 
                 Section {
-                    Toggle("Period reminders", isOn: $periodReminders)
-                    Toggle("Fertile window reminder", isOn: $fertileReminders)
+                    Toggle("period reminders", isOn: $periodReminders)
+                    Toggle("fertile window reminder", isOn: $fertileReminders)
                     if notificationsDenied && (periodReminders || fertileReminders) {
-                        Button("Enable notifications in Settings") {
+                        Button("enable notifications in Settings") {
                             if let url = URL(string: UIApplication.openSettingsURLString) {
                                 openURL(url)
                             }
                         }
                     }
                 } header: {
-                    Text("Reminders")
+                    sectionHeader("gentle reminders")
                 } footer: {
-                    Text("Period reminders arrive 2 days before and on the estimated start day, at 9:00. The fertile reminder arrives when the estimated window opens.")
+                    Text("period reminders arrive 2 days before and on the estimated start day, at 9:00. the fertile reminder arrives when the estimated window opens.")
+                        .foregroundStyle(Theme.soft)
                 }
+                .listRowBackground(Theme.card)
 
                 Section {
-                    Button("Refresh data from Health") {
+                    Button("refresh data from health") {
                         Task { await store.refresh() }
                     }
                     .disabled(store.isRefreshing || !store.healthAvailable)
                 } footer: {
-                    Text("CycleSense stores nothing outside Apple Health. Deleting the app never deletes your Health data.")
+                    Text("cyclesense stores nothing outside apple health. deleting the app never deletes your health data.")
+                        .foregroundStyle(Theme.soft)
                 }
+                .listRowBackground(Theme.card)
 
                 Section {
-                    LabeledContent("Version", value: "1.0")
+                    LabeledContent("version", value: "1.0")
                 } header: {
-                    Text("About")
+                    sectionHeader("about")
                 } footer: {
                     Text("CycleSense is not a medical device. Cycle, fertility, and ovulation predictions are estimates for informational purposes only — do not use them as contraception or medical advice. Talk to a healthcare provider about anything that concerns you.")
+                        .foregroundStyle(Theme.soft)
                 }
+                .listRowBackground(Theme.card)
             }
-            .navigationTitle("Settings")
+            .scrollContentBackground(.hidden)
+            .background(Theme.background)
+            .navigationTitle("settings")
             .task { notificationsDenied = await NotificationScheduler.permissionDenied() }
             .onChange(of: periodReminders) { _, _ in remindersChanged() }
             .onChange(of: fertileReminders) { _, _ in remindersChanged() }
         }
+    }
+
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(Theme.title(17))
+            .foregroundStyle(Theme.ink)
+            .textCase(nil)
     }
 
     private func remindersChanged() {

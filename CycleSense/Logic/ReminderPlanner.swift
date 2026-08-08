@@ -35,8 +35,8 @@ enum ReminderPlanner {
             result.append(PlannedReminder(
                 id: "fertile-start",
                 fireDate: date,
-                title: "Fertile window opening",
-                body: "Your estimated fertile window starts today."
+                title: "fertile window opening",
+                body: "your estimated fertile window starts today."
             ))
         }
 
@@ -46,16 +46,16 @@ enum ReminderPlanner {
                 result.append(PlannedReminder(
                     id: "period-2d",
                     fireDate: date,
-                    title: "Period soon",
-                    body: "Your period is estimated to start in 2 days."
+                    title: "period soon",
+                    body: "your period's estimated in 2 days — stock up and be kind to yourself."
                 ))
             }
             if let date = fireDate(onDay: prediction.nextPeriodStart), date > now {
                 result.append(PlannedReminder(
                     id: "period-0d",
                     fireDate: date,
-                    title: "Period expected today",
-                    body: "Your period is estimated to start today."
+                    title: "period expected today 🌷",
+                    body: "your period's estimated to start today."
                 ))
             }
         }

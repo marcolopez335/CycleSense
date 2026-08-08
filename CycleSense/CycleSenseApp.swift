@@ -8,6 +8,9 @@ struct CycleSenseApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(store)
+                // Cream is the identity — night variant is future work.
+                .preferredColorScheme(.light)
+                .tint(Theme.primary)
         }
     }
 }

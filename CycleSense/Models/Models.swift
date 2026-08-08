@@ -101,10 +101,10 @@ enum CyclePhase: String {
 
     var blurb: String {
         switch self {
-        case .menstrual: return "Your period is here. Energy is often at its lowest — be kind to yourself."
-        case .follicular: return "Estrogen is rising. Many people feel their energy and mood climb."
-        case .ovulatory: return "You are in your estimated fertile window, around ovulation."
-        case .luteal: return "Progesterone rises after ovulation. PMS symptoms can appear late in this phase."
+        case .menstrual: return "your period is here. energy is often at its lowest — be soft with yourself today."
+        case .follicular: return "estrogen is rising. lots of people feel their energy and mood climb here."
+        case .ovulatory: return "you're in your estimated fertile window, right around ovulation."
+        case .luteal: return "progesterone rises after ovulation. pms feelings can show up late in this phase."
         }
     }
 

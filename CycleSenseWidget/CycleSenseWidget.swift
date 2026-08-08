@@ -49,30 +49,31 @@ struct CycleWidgetView: View {
                 content(snapshot: snapshot, cycleDay: cycleDay)
             } else {
                 VStack(spacing: 4) {
-                    Image(systemName: "heart.circle.fill")
-                        .foregroundStyle(.pink)
-                        .font(.title2)
-                    Text("Open CycleSense to start tracking")
+                    Image(systemName: "camera.macro")
+                        .font(.title3)
+                        .foregroundStyle(Theme.primary)
+                    Text("open cyclesense to start tracking")
                         .font(.caption2)
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.soft)
                 }
             }
         }
-        .containerBackground(for: .widget) { Color(.systemBackground) }
+        .containerBackground(for: .widget) { Theme.background }
     }
 
     private func content(snapshot: WidgetSnapshot, cycleDay: Int) -> some View {
         HStack(spacing: 12) {
             VStack(spacing: 2) {
-                Text("Day \(cycleDay)")
-                    .font(.system(.title2, design: .rounded, weight: .bold))
+                Text("day \(cycleDay)")
+                    .font(.system(.title2, design: .serif, weight: .bold))
+                    .foregroundStyle(Theme.ink)
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
                 if let days = daysUntilNextPeriod {
                     Text(periodText(days))
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.soft)
                         .multilineTextAlignment(.center)
                 }
             }
@@ -80,17 +81,17 @@ struct CycleWidgetView: View {
             if family == .systemMedium {
                 VStack(alignment: .leading, spacing: 6) {
                     if let phase = snapshot.phase {
-                        Label("\(phase) phase", systemImage: "circle.hexagongrid.fill")
+                        Label("\(phase.lowercased()) phase", systemImage: "circle.hexagongrid.fill")
                             .font(.caption)
-                            .foregroundStyle(.pink)
+                            .foregroundStyle(Theme.primary)
                     }
                     if let start = snapshot.fertileStart, let end = snapshot.fertileEnd {
                         Label(
-                            "Fertile \(start.formatted(.dateTime.month(.abbreviated).day())) – \(end.formatted(.dateTime.month(.abbreviated).day()))",
+                            "fertile \(start.formatted(.dateTime.month(.abbreviated).day())) – \(end.formatted(.dateTime.month(.abbreviated).day()))",
                             systemImage: "sparkles"
                         )
                         .font(.caption)
-                        .foregroundStyle(.teal)
+                        .foregroundStyle(Color(hex: 0x8FAE94))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -99,9 +100,9 @@ struct CycleWidgetView: View {
     }
 
     private func periodText(_ days: Int) -> String {
-        if days > 1 { return "Period in \(days) days" }
-        if days == 1 { return "Period tomorrow" }
-        if days == 0 { return "Period expected today" }
+        if days > 1 { return "period in \(days) days" }
+        if days == 1 { return "period tomorrow" }
+        if days == 0 { return "period expected today" }
         return -days == 1 ? "1 day late" : "\(-days) days late"
     }
 }

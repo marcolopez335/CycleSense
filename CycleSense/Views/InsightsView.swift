@@ -8,16 +8,19 @@ struct InsightsView: View {
         NavigationStack {
             Group {
                 if store.cycles.isEmpty && store.weightByDay.isEmpty {
-                    ContentUnavailableView(
-                        "No cycles yet",
-                        systemImage: "calendar.badge.exclamationmark",
-                        description: Text("Log your first period from the Today or Calendar tab and your insights will appear here.")
-                    )
+                    ZStack {
+                        Theme.background.ignoresSafeArea()
+                        ContentUnavailableView(
+                            "nothing here yet",
+                            systemImage: "sparkles",
+                            description: Text("log your first period from the Today or Calendar tab and your insights will bloom here")
+                        )
+                    }
                 } else {
                     insightsList
                 }
             }
-            .navigationTitle("Insights")
+            .navigationTitle("insights")
         }
     }
 
@@ -27,67 +30,87 @@ struct InsightsView: View {
                 weightSection
             }
 
-            Section("Averages") {
-                LabeledContent("Average cycle length", value: lengthText(store.prediction?.averageCycleLength))
-                LabeledContent("Average period length", value: lengthText(store.prediction?.averagePeriodLength))
-                LabeledContent("Cycles tracked", value: "\(store.cycles.count)")
+            Section {
+                LabeledContent("average cycle length", value: lengthText(store.prediction?.averageCycleLength))
+                LabeledContent("average period length", value: lengthText(store.prediction?.averagePeriodLength))
+                LabeledContent("cycles tracked", value: "\(store.cycles.count)")
+            } header: {
+                sectionHeader("your rhythm")
             }
+            .listRowBackground(Theme.card)
 
             if let prediction = store.prediction {
-                Section("Upcoming") {
+                Section {
                     LabeledContent(
-                        "Next period",
+                        "next period",
                         value: prediction.nextPeriodStart.formatted(date: .abbreviated, time: .omitted)
                     )
                     if let window = prediction.fertileWindow {
                         LabeledContent(
-                            "Fertile window",
+                            "fertile window",
                             value: "\(window.start.formatted(.dateTime.month(.abbreviated).day())) – \(window.end.formatted(.dateTime.month(.abbreviated).day()))"
                         )
                     }
                     if let ovulation = prediction.ovulationDate {
                         LabeledContent(
-                            "Estimated ovulation",
+                            "estimated ovulation",
                             value: ovulation.formatted(date: .abbreviated, time: .omitted)
                         )
                     }
+                } header: {
+                    sectionHeader("coming up")
                 }
+                .listRowBackground(Theme.card)
             }
 
-            Section("History") {
+            Section {
                 ForEach(store.cycles.reversed()) { cycle in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(cycle.start.formatted(date: .abbreviated, time: .omitted))
                                 .font(.body)
-                            Text("Period: \(cycle.periodLength) \(cycle.periodLength == 1 ? "day" : "days")")
+                                .foregroundStyle(Theme.ink)
+                            Text("period: \(cycle.periodLength) \(cycle.periodLength == 1 ? "day" : "days")")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Theme.soft)
                         }
                         Spacer()
                         if let length = cycle.cycleLength {
                             Text("\(length)-day cycle")
                                 .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Theme.body)
                         } else {
-                            Text("Ongoing")
+                            Text("ongoing")
                                 .font(.subheadline)
-                                .foregroundStyle(.pink)
+                                .foregroundStyle(Theme.primary)
                         }
                     }
                 }
+            } header: {
+                sectionHeader("your history")
             }
+            .listRowBackground(Theme.card)
 
             Section {
             } footer: {
-                Text("Averages use your last \(CyclePredictor.historyWindow) cycles. Predictions are estimates for informational purposes only and are not medical advice or contraception.")
+                Text("averages use your last \(CyclePredictor.historyWindow) cycles. predictions are estimates for informational purposes only — not medical advice or contraception.")
+                    .foregroundStyle(Theme.soft)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Theme.background)
+    }
+
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(Theme.title(17))
+            .foregroundStyle(Theme.ink)
+            .textCase(nil)
     }
 
     private func lengthText(_ value: Int?) -> String {
         guard let value else { return "—" }
-        return "\(value) days"
+        return value == 1 ? "1 day" : "\(value) days"
     }
 
     // MARK: - Weight trend
@@ -126,11 +149,12 @@ struct InsightsView: View {
         Section {
             if weightHistory.count < 2 {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Keep logging")
+                    Text("keep logging")
                         .font(.headline)
-                    Text("Two or more entries and your trend appears here.")
+                        .foregroundStyle(Theme.ink)
+                    Text("two or more entries and your trend appears here.")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.body)
                 }
                 .padding(.vertical, 4)
             } else {
@@ -139,10 +163,12 @@ struct InsightsView: View {
                     .padding(.vertical, 6)
             }
         } header: {
-            Text("Weight")
+            sectionHeader("your weight")
         } footer: {
-            Text("Weight naturally shifts across your cycle — trends matter more than single days. Pink bands are logged period days.")
+            Text("weight naturally shifts across your cycle — trends matter more than single days. pink bands are logged period days.")
+                .foregroundStyle(Theme.soft)
         }
+        .listRowBackground(Theme.card)
     }
 
     private var weightChart: some View {
@@ -152,14 +178,14 @@ struct InsightsView: View {
                     xStart: .value("Start", day),
                     xEnd: .value("End", Calendar.current.date(byAdding: .day, value: 1, to: day) ?? day)
                 )
-                .foregroundStyle(.pink.opacity(0.10))
+                .foregroundStyle(Theme.primary.opacity(0.10))
             }
             ForEach(weightHistory, id: \.date) { entry in
                 PointMark(
                     x: .value("Day", entry.date),
                     y: .value("Weight", displayUnit(entry.kg))
                 )
-                .foregroundStyle(.pink.opacity(0.55))
+                .foregroundStyle(Theme.primary.opacity(0.5))
                 .symbolSize(36)
             }
             ForEach(weightTrend, id: \.date) { entry in
@@ -168,7 +194,7 @@ struct InsightsView: View {
                     y: .value("Trend", displayUnit(entry.kg))
                 )
                 .interpolationMethod(.catmullRom)
-                .foregroundStyle(.pink)
+                .foregroundStyle(Theme.primary)
                 .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
             }
         }
