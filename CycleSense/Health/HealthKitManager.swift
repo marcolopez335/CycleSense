@@ -30,6 +30,7 @@ final class HealthKitManager {
         .lowerBackPain: .lowerBackPain,
         .nausea: .nausea,
         .acne: .acne,
+        .cravings: .appetiteChanges,
     ]
 
     private func type(for symptom: Symptom) -> HKCategoryType {
@@ -39,14 +40,25 @@ final class HealthKitManager {
         return HKCategoryType(identifier)
     }
 
+    private var weightType: HKQuantityType { HKQuantityType(.bodyMass) }
+    private var bbtType: HKQuantityType { HKQuantityType(.basalBodyTemperature) }
+    private var sexType: HKCategoryType { HKCategoryType(.sexualActivity) }
+    private var ovulationTestType: HKCategoryType { HKCategoryType(.ovulationTestResult) }
+    private var moodType: HKSampleType { HKObjectType.stateOfMindType() }
+
+    private static let moodLabelMap: [MoodLabel: HKStateOfMind.Label] = [
+        .calm: .calm, .content: .content, .happy: .happy, .stressed: .stressed,
+        .irritated: .irritated, .anxious: .anxious, .sad: .sad, .discouraged: .discouraged,
+    ]
+
     // MARK: - Authorization
 
     /// Asks for read and write access to menstrual flow and all symptom types.
     /// HealthKit shows its permission sheet only the first time; afterwards
     /// the user manages access in the Health app.
     func requestAuthorization() async throws {
-        var shareTypes: Set<HKSampleType> = [flowType]
-        var readTypes: Set<HKObjectType> = [flowType]
+        var shareTypes: Set<HKSampleType> = [flowType, weightType, bbtType, sexType, ovulationTestType, moodType]
+        var readTypes: Set<HKObjectType> = [flowType, weightType, bbtType, sexType, ovulationTestType, moodType]
         for symptom in Symptom.allCases {
             let categoryType = type(for: symptom)
             shareTypes.insert(categoryType)
@@ -107,6 +119,93 @@ final class HealthKitManager {
         return byDay
     }
 
+    /// Latest body-mass reading per day, in kilograms.
+    func fetchWeightByDay(monthsBack: Int = 24) async throws -> [Date: Double] {
+        try await fetchQuantityByDay(type: weightType, unit: .gramUnit(with: .kilo), monthsBack: monthsBack)
+    }
+
+    /// Latest basal body temperature per day, in °C.
+    func fetchBBTByDay(monthsBack: Int = 24) async throws -> [Date: Double] {
+        try await fetchQuantityByDay(type: bbtType, unit: .degreeCelsius(), monthsBack: monthsBack)
+    }
+
+    private func fetchQuantityByDay(type: HKQuantityType, unit: HKUnit, monthsBack: Int) async throws -> [Date: Double] {
+        let calendar = Calendar.current
+        let (start, end) = queryRange(monthsBack: monthsBack, calendar: calendar)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: type, predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate)]
+        )
+        let samples = try await descriptor.result(for: healthStore)
+        var byDay: [Date: Double] = [:]
+        for sample in samples {
+            // Sorted ascending, so the latest sample of the day wins.
+            byDay[calendar.startOfDay(for: sample.startDate)] = sample.quantity.doubleValue(for: unit)
+        }
+        return byDay
+    }
+
+    /// Sexual activity per day. Protection metadata maps to the entry case.
+    func fetchSexualActivityByDay(monthsBack: Int = 24) async throws -> [Date: SexualActivityEntry] {
+        let calendar = Calendar.current
+        let (start, end) = queryRange(monthsBack: monthsBack, calendar: calendar)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.categorySample(type: sexType, predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate)]
+        )
+        let samples = try await descriptor.result(for: healthStore)
+        var byDay: [Date: SexualActivityEntry] = [:]
+        for sample in samples {
+            let entry: SexualActivityEntry
+            if let used = sample.metadata?[HKMetadataKeySexualActivityProtectionUsed] as? Bool {
+                entry = used ? .protected : .unprotected
+            } else {
+                entry = .unspecified
+            }
+            byDay[calendar.startOfDay(for: sample.startDate)] = entry
+        }
+        return byDay
+    }
+
+    /// Ovulation test results per day.
+    func fetchOvulationTestsByDay(monthsBack: Int = 24) async throws -> [Date: OvulationTestResult] {
+        let calendar = Calendar.current
+        let (start, end) = queryRange(monthsBack: monthsBack, calendar: calendar)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.categorySample(type: ovulationTestType, predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate)]
+        )
+        let samples = try await descriptor.result(for: healthStore)
+        var byDay: [Date: OvulationTestResult] = [:]
+        for sample in samples {
+            guard let result = OvulationTestResult(rawValue: sample.value) else { continue }
+            byDay[calendar.startOfDay(for: sample.startDate)] = result
+        }
+        return byDay
+    }
+
+    /// Daily-mood State of Mind entries per day.
+    func fetchMoodByDay(monthsBack: Int = 24) async throws -> [Date: MoodEntry] {
+        let calendar = Calendar.current
+        let (start, end) = queryRange(monthsBack: monthsBack, calendar: calendar)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.stateOfMind(predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate)]
+        )
+        let samples = try await descriptor.result(for: healthStore)
+        var byDay: [Date: MoodEntry] = [:]
+        let reverseLabelMap = Dictionary(uniqueKeysWithValues: Self.moodLabelMap.map { ($1, $0) })
+        for sample in samples where sample.kind == .dailyMood {
+            let labels = Set(sample.labels.compactMap { reverseLabelMap[$0] })
+            byDay[calendar.startOfDay(for: sample.startDate)] = MoodEntry(valence: sample.valence, labels: labels)
+        }
+        return byDay
+    }
+
     private func queryRange(monthsBack: Int, calendar: Calendar) -> (Date, Date) {
         let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date())) ?? Date()
         let start = calendar.date(byAdding: .month, value: -monthsBack, to: end) ?? end
@@ -149,11 +248,78 @@ final class HealthKitManager {
             let categoryType = type(for: symptom)
             try? await deleteOwnSamples(of: categoryType, on: dayStart)
             if symptoms.contains(symptom) {
-                // 0 means "unspecified" severity / "present" — we log presence only.
-                let sample = HKCategorySample(type: categoryType, value: 0, start: dayStart, end: dayStart)
+                let sample = HKCategorySample(type: categoryType, value: symptom.hkWriteValue, start: dayStart, end: dayStart)
                 try? await healthStore.save(sample)
             }
         }
+    }
+
+    // MARK: - Writing (expanded log)
+
+    /// Replaces this app's body-mass sample for the day.
+    func saveWeight(_ kilograms: Double?, on day: Date) async throws {
+        let dayStart = Calendar.current.startOfDay(for: day)
+        try await deleteOwnSamples(of: weightType, on: dayStart)
+        guard let kilograms else { return }
+        let quantity = HKQuantity(unit: .gramUnit(with: .kilo), doubleValue: kilograms)
+        let sample = HKQuantitySample(type: weightType, quantity: quantity, start: dayStart, end: dayStart)
+        try await healthStore.save(sample)
+    }
+
+    /// Replaces this app's basal body temperature sample for the day.
+    func saveBBT(_ celsius: Double?, on day: Date) async throws {
+        let dayStart = Calendar.current.startOfDay(for: day)
+        try await deleteOwnSamples(of: bbtType, on: dayStart)
+        guard let celsius else { return }
+        let quantity = HKQuantity(unit: .degreeCelsius(), doubleValue: celsius)
+        let sample = HKQuantitySample(type: bbtType, quantity: quantity, start: dayStart, end: dayStart)
+        try await healthStore.save(sample)
+    }
+
+    /// Replaces this app's sexual-activity sample for the day.
+    func saveSexualActivity(_ entry: SexualActivityEntry?, on day: Date) async throws {
+        let dayStart = Calendar.current.startOfDay(for: day)
+        try await deleteOwnSamples(of: sexType, on: dayStart)
+        guard let entry else { return }
+        var metadata: [String: Any] = [:]
+        switch entry {
+        case .protected: metadata[HKMetadataKeySexualActivityProtectionUsed] = true
+        case .unprotected: metadata[HKMetadataKeySexualActivityProtectionUsed] = false
+        case .unspecified: break
+        }
+        let sample = HKCategorySample(
+            type: sexType,
+            value: HKCategoryValue.notApplicable.rawValue,
+            start: dayStart,
+            end: dayStart,
+            metadata: metadata.isEmpty ? nil : metadata
+        )
+        try await healthStore.save(sample)
+    }
+
+    /// Replaces this app's ovulation test result for the day.
+    func saveOvulationTest(_ result: OvulationTestResult?, on day: Date) async throws {
+        let dayStart = Calendar.current.startOfDay(for: day)
+        try await deleteOwnSamples(of: ovulationTestType, on: dayStart)
+        guard let result else { return }
+        let sample = HKCategorySample(type: ovulationTestType, value: result.rawValue, start: dayStart, end: dayStart)
+        try await healthStore.save(sample)
+    }
+
+    /// Replaces this app's daily-mood State of Mind sample for the day.
+    func saveMood(_ mood: MoodEntry?, on day: Date) async throws {
+        let dayStart = Calendar.current.startOfDay(for: day)
+        try await deleteOwnSamples(of: moodType, on: dayStart)
+        guard let mood else { return }
+        let labels = mood.labels.compactMap { Self.moodLabelMap[$0] }
+        let sample = HKStateOfMind(
+            date: dayStart,
+            kind: .dailyMood,
+            valence: mood.valence,
+            labels: labels,
+            associations: []
+        )
+        try await healthStore.save(sample)
     }
 
     /// Deletes samples of the given type that this app created on that day.

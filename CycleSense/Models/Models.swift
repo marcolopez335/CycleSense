@@ -37,6 +37,7 @@ enum Symptom: String, CaseIterable, Identifiable, Hashable {
     case lowerBackPain
     case nausea
     case acne
+    case cravings
 
     var id: String { rawValue }
 
@@ -51,6 +52,7 @@ enum Symptom: String, CaseIterable, Identifiable, Hashable {
         case .lowerBackPain: return "Lower back pain"
         case .nausea: return "Nausea"
         case .acne: return "Acne"
+        case .cravings: return "Cravings"
         }
     }
 
@@ -65,7 +67,15 @@ enum Symptom: String, CaseIterable, Identifiable, Hashable {
         case .lowerBackPain: return "figure.walk"
         case .nausea: return "tornado"
         case .acne: return "face.dashed"
+        case .cravings: return "fork.knife"
         }
+    }
+
+    /// Category value written to HealthKit for this symptom.
+    /// Presence-style types use 0 ("unspecified/present"); appetiteChanges
+    /// is value-coded, so cravings write 3 ("increased").
+    var hkWriteValue: Int {
+        self == .cravings ? 3 : 0
     }
 }
 
@@ -91,10 +101,10 @@ enum CyclePhase: String {
 
     var blurb: String {
         switch self {
-        case .menstrual: return "Your period is here. Energy is often at its lowest — be kind to yourself."
-        case .follicular: return "Estrogen is rising. Many people feel their energy and mood climb."
-        case .ovulatory: return "You are in your estimated fertile window, around ovulation."
-        case .luteal: return "Progesterone rises after ovulation. PMS symptoms can appear late in this phase."
+        case .menstrual: return "your period is here. energy is often at its lowest — be soft with yourself today."
+        case .follicular: return "estrogen is rising. lots of people feel their energy and mood climb here."
+        case .ovulatory: return "you're in your estimated fertile window, right around ovulation."
+        case .luteal: return "progesterone rises after ovulation. pms feelings can show up late in this phase."
         }
     }
 
@@ -119,4 +129,69 @@ struct Prediction {
     let ovulationDate: Date?
     /// Estimated fertile window (5 days before ovulation through 1 day after).
     let fertileWindow: DateInterval?
+}
+
+/// Feeling labels offered with a daily mood. Cases map 1:1 to
+/// `HKStateOfMind.Label` values available on iOS 17 (see HealthKitManager).
+enum MoodLabel: String, CaseIterable, Identifiable, Hashable {
+    case calm, content, happy, stressed, irritated, anxious, sad, discouraged
+
+    var id: String { rawValue }
+    var displayName: String { rawValue.capitalized }
+}
+
+/// One day's mood: valence on Apple's -1…1 pleasantness scale plus labels.
+struct MoodEntry: Hashable {
+    /// -1 (very unpleasant) … 1 (very pleasant).
+    var valence: Double
+    var labels: Set<MoodLabel>
+}
+
+/// Sexual activity for a day. `unspecified` covers samples from other apps
+/// that carry no protection metadata.
+enum SexualActivityEntry: String, CaseIterable, Identifiable, Hashable {
+    case protected
+    case unprotected
+    case unspecified
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .protected: return "Protected"
+        case .unprotected: return "Unprotected"
+        case .unspecified: return "Unspecified"
+        }
+    }
+}
+
+/// Ovulation test result. Raw values match `HKCategoryValueOvulationTestResult`.
+enum OvulationTestResult: Int, CaseIterable, Identifiable, Hashable {
+    case negative = 1
+    case luteinizingHormoneSurge = 2
+    case indeterminate = 3
+    case estrogenSurge = 4
+
+    var id: Int { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .negative: return "Negative"
+        case .luteinizingHormoneSurge: return "LH surge"
+        case .indeterminate: return "Indeterminate"
+        case .estrogenSurge: return "Estrogen surge"
+        }
+    }
+}
+
+/// Everything the log sheet can save for one day. Nil means "not logged" —
+/// saving nil clears this app's samples of that type for the day.
+struct DayLogEntry {
+    var flow: FlowLevel?
+    var symptoms: Set<Symptom> = []
+    var mood: MoodEntry?
+    var weightKg: Double?
+    var bbtCelsius: Double?
+    var sexualActivity: SexualActivityEntry?
+    var ovulationTest: OvulationTestResult?
 }

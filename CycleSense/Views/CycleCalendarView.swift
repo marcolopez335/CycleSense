@@ -14,15 +14,18 @@ struct CycleCalendarView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                monthHeader
-                weekdayHeader
-                monthGrid
-                legend
-                Spacer(minLength: 0)
+            ZStack {
+                Theme.background.ignoresSafeArea()
+                VStack(spacing: 12) {
+                    monthHeader
+                    weekdayHeader
+                    monthGrid
+                    legend
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
-            .navigationTitle("Calendar")
+            .navigationTitle("calendar")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(item: $selectedDay) { day in
                 LogView(date: day.date)
@@ -36,15 +39,18 @@ struct CycleCalendarView: View {
                 shiftMonth(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
+                    .foregroundStyle(Theme.primary)
             }
             Spacer()
-            Text(displayedMonth.formatted(.dateTime.month(.wide).year()))
-                .font(.headline)
+            Text(displayedMonth.formatted(.dateTime.month(.wide).year()).lowercased())
+                .font(Theme.title(20))
+                .foregroundStyle(Theme.ink)
             Spacer()
             Button {
                 shiftMonth(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
+                    .foregroundStyle(Theme.primary)
             }
         }
         .padding(.top, 8)
@@ -108,12 +114,12 @@ struct CycleCalendarView: View {
     private var legend: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 16) {
-                LegendItem(color: .red, filled: true, label: "Period")
-                LegendItem(color: .red.opacity(0.25), filled: true, label: "Predicted")
+                LegendItem(color: Theme.primary, filled: true, label: "period")
+                LegendItem(color: Theme.primary.opacity(0.25), filled: true, label: "predicted")
             }
             HStack(spacing: 16) {
-                LegendItem(color: .teal.opacity(0.35), filled: true, label: "Fertile")
-                LegendItem(color: .teal, filled: false, label: "Ovulation")
+                LegendItem(color: Color(hex: 0xC5D6C7), filled: true, label: "fertile")
+                LegendItem(color: Color(hex: 0x8FAE94), filled: false, label: "ovulation")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -172,13 +178,13 @@ private struct DayCell: View {
     private var background: some View {
         switch mark {
         case .period:
-            Circle().fill(.red)
+            Circle().fill(Theme.primary)
         case .predictedPeriod:
-            Circle().fill(.red.opacity(0.2))
+            Circle().fill(Theme.primary.opacity(0.18))
         case .fertile:
-            Circle().fill(.teal.opacity(0.25))
+            Circle().fill(Color(hex: 0xC5D6C7).opacity(0.55))
         case .ovulation:
-            Circle().stroke(.teal, lineWidth: 1.5)
+            Circle().stroke(Color(hex: 0x8FAE94), lineWidth: 1.5)
         case nil:
             EmptyView()
         }
@@ -186,7 +192,7 @@ private struct DayCell: View {
 
     private var textColor: Color {
         if case .period = mark { return .white }
-        return .primary
+        return Theme.ink
     }
 }
 
